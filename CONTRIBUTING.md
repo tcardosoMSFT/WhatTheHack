@@ -172,7 +172,7 @@ When you feel your hack is finished and ready for release, this is the process w
         - All links work, especially the navigation links
         - There are no links to the WTH repo or Coach's guide from the Student guide (See the [WTH Author's Guide](./000-HowToHack/WTH-HowToAuthorAHack.md))
         - All images show properly.
-        - Any syntax, grammar or punctuation problems that the reviewers see and want you to address.
+        - Any syntax, grammar or punctuation problems that the reviewers see and want you to address. See the [Spell Check section](#spell-check) for more details.
         - This is NOT a technical content review. As the author(s), YOU are the subject matter experts. The WTH team will trust that you have taken care of the technical bits.
     - **NOTE:** It is important that you take notes through-out the meeting so that you can go away, make any changes requested, and not miss anything.
 1.	Once you have completed any requested changes from the "pre-PR review":
@@ -181,6 +181,32 @@ When you feel your hack is finished and ready for release, this is the process w
 1.	The WTH team will review your PR and leave comments if there are any requested changes that still remain. If there are requested changes, please add further comments if you have clarifying questions to ask, or arguments against, the requested changes (that’s ok).
     - **NOTE:** Make any requested changes by continuing to commit to your fork. The PR will automatically update with your changes.  You do NOT need to create a new pull request!
 1.	Once you have addressed any requested changes from the WTH team, the WTH team will accept and merge the PR.
+
+### Spell Check
+
+A spell checker will run on each new pull request submitted and again each time additional commits are made against that pull request. It will use common English words as well as technical terms from the `.github/workflows/spell-check/.wordlist.txt` file.  The spell checker ignores content within code blocks.
+
+This will run on each pull request that is submitted to the `master` branch.
+
+If the spell check fails, click the `Details` link as highlighted in the image below, to reveal the spelling errors that were detected.
+
+![Spell Check Fail](000-HowToHack/images/spell-check-fail.png?raw=true "Spell Check Fail")
+
+The spelling errors will be listed along side of each page that they occurred on as in the image below:
+
+![Spell Check Misspelled Words](000-HowToHack/images/spell-check-misspelled-words.png?raw=true "Spell Check Misspelled Words")
+
+If the spell checker detects spelling errors, you have 3 options for resolving them:
+
+- Fix the misspelled word!
+- Wrap the word in a code block with backticks (\`\`).
+  - If the word is a programmatic term, object or variable name, form field, etc. (i.e. `databaseName` or `ColumnName`), you should wrap the word in backticks (\`\`) which will make it a code block.
+  - This will make your content more readable by making these terms stand out on the page.
+  - The majority of words flagged by the spell checker usually fall into this category.
+- Add the word to the whitelist for your hack.
+  - Adding words to the whitelist should be reserved for proper names like a product name (i.e. "Kubernetes"), or a term that is part of the vocabulary for a given technology (i.e. "kubectl")
+  - Add a file called `.wordlist.txt` to your new WTH sub-directory and include all the words you want the spell checker to ignore.
+  - There should be 1 word on each line (similar to how the `.github/workflows/spell-check/.wordlist.txt` file is formatted).
 
 ### Use Draft Pull Requests for Early Feedback
 
@@ -246,6 +272,4 @@ instructions provided by the bot. You will only need to do this once across all 
 
 ## Code of Conduct
 
-This project has adopted the [Microsoft Open Source Code of Conduct](https://opensource.microsoft.com/codeofconduct/). For more information see the Code of Conduct FAQ
-or contact opencode@microsoft.com with any additional questions or comments.
-
+This project has adopted the [Microsoft Open Source Code of Conduct](https://opensource.microsoft.com/codeofconduct/). For more information see the Code of Conduct FAQ or contact `opencode@microsoft.com` with any additional questions or comments.

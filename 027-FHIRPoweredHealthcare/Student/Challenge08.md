@@ -1,100 +1,90 @@
-# Challenge 8: Stream IoMT Device data into FHIR from IoT Central
+# Challenge 8: OMOP Analytics
 
-[< Previous Challenge](./Challenge07.md) - **[Home](../readme.md)** - [Next Challenge>](./Challenge09.md)
+[< Previous Challenge](./Challenge07.md) - **[Home](../README.md)**
 
 ## Introduction
 
-In this challenge, you will stream IoMT Device data into FHIR from IoT Central. 
+In the [Healthcare data solutions in Fabric](https://learn.microsoft.com/en-us/industry/healthcare/healthcare-data-solutions/overview), `OMOP Analytics` capability within Fabric Lakehouse allows for the deployment of the Observational Medical Outcomes Partnership (OMOP) Common Data Model (CDM), giving researchers within the OMOP community access to OneLake’s scale and harness AI in Microsoft Fabric. This setup supports standardized analytics for observational studies, enabling researchers to compare procedures and drug exposures and explore drug-condition correlations.
 
-The **[Azure IoT Connector for FHIR](https://docs.microsoft.com/en-us/azure/healthcare-apis/iot-fhir-portal-quickstart)** for Fast Healthcare Interoperability Resources (FHIR®)* is a feature of Azure API for FHIR that provides the capability to ingest data from Internet of Medical Things (IoMT) devices. Azure IoT Connector for FHIR needs two mapping templates to transform device messages into FHIR-based Observation resource(s): device mapping and FHIR mapping. Device mapping template transforms device data into a normalized schema. On the IoT Connector page, click on Configure device mapping button to go to the Device mapping page. FHIR mapping template transforms a normalized message to a FHIR-based Observation resource. On the IoT Connector page, click on Configure FHIR mapping button to go to the FHIR mapping page.
-
-Azure offers an extensive suite of IoT products to connect and manage your IoT devices. Users can build their own solution based on PaaS using Azure IoT Hub, or start with a manage IoT apps platform with Azure IoT Central. This challenge leverages Azure IoT Central, which has industry-focused solution templates to help get started. Once IoT Central application is deployed, two out-of-the-box simulated devices will start generating telemetry.
- 
-<center><img src="../images/challenge08-architecture.jpg" width="350"></center>
+Below is the overview of the **[Healthcare data solutions in Fabric](https://learn.microsoft.com/en-us/industry/healthcare/healthcare-data-solutions/solution-architecture) solution architecture**:
+<center><img src="../images/challenge08-architecture.png" width="550"></center>
 
 ## Description
 
-You will deploy IoT Connector for FHIR and Setup IoT Device in IoT Central and Connect to FHIR.
+In this challenge, you will [deploy Healthcare data solutions](https://learn.microsoft.com/en-us/industry/healthcare/healthcare-data-solutions/deploy) to your Microsoft Fabric workspace to access the Healthcare data foundations and OMOP analytics capabilities. Configure them to meet OMOP standards, use pre-built pipelines to process data exported from your FHIR service, transform it to OMOP, and implement the OMOP CDM within the Microsoft Fabric medallion architecture, which consists of the following three core layers:
+- `Bronze` (raw zone): this first layer stores the source data in its original format. The data in this layer is typically append-only and immutable.
+- `Silver` (enriched zone): this layer receives data from the Bronze layer and refines it through validation and enrichment processes, improving its accuracy and value for downstream analytics.
+- `Gold` (curated zone): this final layer, sourced from the Silver layer, refines data to align with specific downstream business and analytical needs.  It’s the primary source for high-quality, aggregated datasets, ready for in-depth analysis and insight extraction.
 
-- **Deploy Azure IoT Connector for FHIR**
-	- Navigate to Azure API for FHIR resource. Click on IoT Connector under the Add-ins section. Click on the Add button to open the Create IoT Connector page. Enter Connector name for the new Azure IoT Connector for FHIR. Choose Create for Resolution Type and click on Create button.
-- **Configure Azure IoT Connector for FHIR**. To **upload mapping templates**, click on the newly deployed Azure IoT Connector for FHIR to go to the IoT Connector page.
-   * Device mapping template transforms **device data into a normalized schema**. On the IoT Connector page, click on **Configure device mapping** button to go to the Device mapping page. On the Device mapping page, add the following script to the JSON editor and click Save.
-      ```json
-      {
-        "templateType": "CollectionContent",
-        "template": [
-          {
-            "templateType": "IotJsonPathContent",
-            "template": {
-              "typeName": "heartrate",
-              "typeMatchExpression": "$..[?(@Body.HeartRate)]",
-              "patientIdExpression": "$.SystemProperties.iothub-connection-device-id",
-              "values": [
-                {
-                  "required": "true",
-                  "valueExpression": "$.Body.HeartRate",
-                  "valueName": "hr"
-                }
-              ]
-            }
-          }
-        ]
-      }
-     ``` 
-   * FHIR mapping template **transforms a normalized message to a FHIR-based Observation resource**. On the IoT Connector page, click on **Configure FHIR mapping** button to go to the FHIR mapping page. On the FHIR mapping page, add the following script to the JSON editor and click Save.
-      ```json
-      {
-        "templateType": "CollectionFhir",
-        "template": [
-          {
-            "templateType": "CodeValueFhir",
-            "template": {
-              "codes": [
-                {
-                  "code": "8867-4",
-                  "system": "http://loinc.org",
-                  "display": "Heart rate"
-                }
-              ],
-              "periodInterval": 0,
-              "typeName": "heartrate",
-              "value": {
-                "unit": "count/min",
-                "valueName": "hr",
-                "valueType": "Quantity"
-              }
-            }
-          }
-        ]
-      }
-     ``` 
-- **Generate a connection string for IoT Device**
-    - On the IoT Connector page, select **Manage client connections** button. Click on **Add** button. Provide a name and select the **Create** button. Select the newly created connection from the Connections page and copy the value of Primary connection string field from the overlay window on the right.
+(Optional) Once FHIR data is transformed to OMOP standards in the Gold Lakehouse, utilize pre-built Notebooks to construct statistical models, conduct population studies, and generate Power BI reports for comparative analysis of various interventions on patient health outcomes.
 
-- **Create App in IoT Central**
-    - Navigate to the [Azure IoT Central application manager website](https://apps.azureiotcentral.com/). Select **Build** from the left-hand navigation bar and then click the **Healthcare** tab.
-    - Click the **Create app** button and sign in. It will take you to the **New application** page.
-    - Change the **Application name** and **URL** or leave as-is. 
-    - Check the **Pricing plan** and select free pricing plan or one of the standard pricing plans. 
-    - Select **Create** at the bottom of the page to deploy your application.
-    - More details on [Continuous Patient Monitoring](https://docs.microsoft.com/en-us/azure/iot-central/healthcare/tutorial-continuous-patient-monitoring#create-an-application-template).
-- **Connect your IoT data with the Azure IoT Connector for FHIR**
-    - Navigate to IoT Central App created, click on **Data Export (legacy)** under App Settings in the left navigation.
-    - Choose **New --> Azure Event Hubs**. Enter a display name for your new export, and make sure the data export is Enabled.
-    - Choose **Connection String** in Event Hubs namespace and paste the Connection String copied from above. Event Hub name will autofill.
-    - Make sure **Telemetry** is enabled, Devices and Device templates are disabled.
-    - More details on [Data Export](https://docs.microsoft.com/en-us/azure/iot-central/core/howto-export-data#set-up-data-export).
+**Prerequisites:**
+- **[Deploy the Healthcare data solutions in Microsoft Fabric](https://learn.microsoft.com/en-us/industry/healthcare/healthcare-data-solutions/deploy#use-fhir-service)** Azure Marketplace offer and set up data connection to use FHIR service (deployed in challenge 1).  After the deployment, the following Azure resources are provisioned to your environment:
+  - `Application Insights Smart Detection` (Action Group)
+  - `Failure Anomalies` (Smart detection alert rule)
+  - `msft-api-datamanager` (Application Insights)
+  - `msft-asp-datamanager` (App Service Plan)
+  - `msft-ds-delayDeployment` (Deployment Script)
+  - `msft-funct-datamanager-export` (Function App)
+  - `msft-kv` (Key Vault)
+  - `msft-log datamanager` (Log Analytics workspace)
+  - `msftst` (Storage Account)
+  - `msftstexport` (Storage Account)
 
-- **Validate export and anonymization**
-    - Connect to Azure API for FHIR from Postman and check if Device and Observsation resources return data. 
+- **[Deploy Healthcare data foundations](https://learn.microsoft.com/en-us/industry/healthcare/healthcare-data-solutions/healthcare-data-foundations-configure#deploy-healthcare-data-foundations)** capability in Healthcare data solutions to provide ready-to-run data pipelines designed to efficiently structure data for analytics and AI/machine learning modeling. After the deployment, the following Lakehouse and Notebook artifacts are deployed to your workspace:
+  - `msft_bronze` Lakehouse
+  - `msft_gold_omop` Lakehouse
+  - `msft_silver` Lakehouse
+  - `msft_config_notebook` Notebook
+  - `msft_bronze_silver_flatten` Notebook
+  - `msft_raw_bronze_ingestion` Notebook
+  - `msft_silver_sample_flatten_extensions_utility` Notebook
+
+- **[Configure the global configuration (`msft_config_notebook`)](https://learn.microsoft.com/en-us/industry/healthcare/healthcare-data-solutions/healthcare-data-foundations-configure#configure-the-global-configuration-notebook)** Notebook deployed with Healthcare data foundation to set up and manage configurations for data transformation in Healthcare data solutions
+
+- **[Deploy and configure FHIR data ingestion](https://learn.microsoft.com/en-us/industry/healthcare/healthcare-data-solutions/fhir-data-ingestion-configure)** capability to bring FHIR data (deployed in challenge 1) to Microsoft Fabric OneLake. After the deployment, the following Notebook artifact is deployed to your workspace:
+  - `msft_fhir_export_service` Notebook
+
+- **[Deploy & configure OMOP analytics](https://learn.microsoft.com/en-us/industry/healthcare/healthcare-data-solutions/omop-analytics-configure)** capability to prepare data for standardized analytics through OMOP open community standards.  After the deployment, the following Notebook artifacts are deployed to your workspace:
+  - `msft_silver_omop` Notebook
+  - `msft_omop_sample_drug_exposure_era` Notebook
+  - `msft_omop_sample_drug_exposure_insights` Notebook
+  
+**First, run FHIR ingestion pipeline to export your FHIR data (deployed in challenge 1) and store the raw JSON in the lake**
+  - **HINT:** Configure and run `msft_fhir_export_service` Notebook
+
+**Ingest raw data into delta tables in the Bronze (`msft_bronze`) Lakehouse**
+  - **HINT:** [Configure and run `msft_raw_bronze_ingestion`](https://learn.microsoft.com/en-us/industry/healthcare/healthcare-data-solutions/healthcare-data-foundations-configure#healthcare_msft_raw_bronze_ingestion) Notebook
+
+**Flatten raw FHIR JSON files in Bronze (`msft_bonze`) Lakehouse and to ingest the resulting data into the Silver (`msft_silver`) Lakehouse**
+  - **HINT:** [Configure and run `msft_bronze_silver_flatten`](https://learn.microsoft.com/en-us/industry/healthcare/healthcare-data-solutions/healthcare-data-foundations-configure#healthcare_msft_bronze_silver_flatten) Notebook
+
+**Transform resources in the Sliver Lakehouse into OMOP Common Data Model and persist in Gold (`msft_gold_omop`) Lakehouse**
+  - **HINT:** [Configure and run `msft_silver_omop`](https://learn.microsoft.com/en-us/industry/healthcare/healthcare-data-solutions/omop-analytics-configure#configure-the-omop-silver-notebook) Notebook
+  
 
 ## Success Criteria
-- You have successfully configured IoT Connector for FHIR.
-- You have successfully configured IoT Central Continuous Patient Monitoring Application.
+
+To complete this challenge successfully, you should be able to:
+- Confirm that the raw FHIR data export is stored in the Bronze Lakehouse’s delta tables
+- Verify that FHIR data has been flattened in preparation for standardized analytics through OMOP standards and is stored in the Silver Lakehouse
+- Check that the flattened data in the Silver Lakehouse has been transformed into the OMOP Common Data Model (CDM) and is stored in the Gold Lakehouse.
 
 ## Learning Resources
 
-- **[HIPPA Safe Harbor Method](https://www.hhs.gov/hipaa/for-professionals/privacy/special-topics/de-identification/index.html)**
-- **[HL7 bulk export](https://hl7.org/Fhir/uv/bulkdata/export/index.html)**
-- **[FHIR Tools for Anonymization](https://github.com/microsoft/FHIR-Tools-for-Anonymization)**
+- [What is Healthcare data solutions](https://learn.microsoft.com/en-us/industry/healthcare/healthcare-data-solutions/overview)
+- [Healthcare data solution architecture overview](https://learn.microsoft.com/en-us/industry/healthcare/healthcare-data-solutions/solution-architecture)
+- [Deploy Healthcare data solutions](https://learn.microsoft.com/en-us/industry/healthcare/healthcare-data-solutions/deploy)
+- [Set up data connection using FHIR service](https://learn.microsoft.com/en-us/industry/healthcare/healthcare-data-solutions/deploy#use-fhir-service)
+- [Set up Azure Language Service](https://learn.microsoft.com/en-us/industry/healthcare/healthcare-data-solutions/deploy#set-up-azure-language-service)
+- [Deploy the Healthcare data solutions in Microsoft Fabric via Azure Marketplace](https://learn.microsoft.com/en-us/industry/healthcare/healthcare-data-solutions/deploy#deploy-azure-marketplace-offer)
+- [Deploy and configure Healthcare data foundation](https://learn.microsoft.com/en-us/industry/healthcare/healthcare-data-solutions/healthcare-data-foundations-configure)
+- [Configure the global configuration notebook](https://learn.microsoft.com/en-us/industry/healthcare/healthcare-data-solutions/healthcare-data-foundations-configure#configure-the-global-configuration-notebook)
+- [Deploy and configure FHIR data ingestion](https://learn.microsoft.com/en-us/industry/healthcare/healthcare-data-solutions/fhir-data-ingestion-configure)
+- [Configure the FHIR export service](https://learn.microsoft.com/en-us/industry/healthcare/healthcare-data-solutions/fhir-data-ingestion-configure#configure-the-fhir-export-service)
+- [Configure and deploy `msft_raw_bronze_ingestion`](https://learn.microsoft.com/en-us/industry/healthcare/healthcare-data-solutions/healthcare-data-foundations-configure#healthcare_msft_raw_bronze_ingestion)
+- [Configure and deploy `msft_bronze_silver_flatten`](https://learn.microsoft.com/en-us/industry/healthcare/healthcare-data-solutions/healthcare-data-foundations-configure#healthcare_msft_bronze_silver_flatten)
+- [Overview of OMOP analytics in Healthcare data solutions](https://learn.microsoft.com/en-us/industry/healthcare/healthcare-data-solutions/omop-analytics-overview)
+- [Deploy and configure OMOP analytics](https://learn.microsoft.com/en-us/industry/healthcare/healthcare-data-solutions/omop-analytics-configure)
+- [Configure the OMOP Silver Notebook](https://learn.microsoft.com/en-us/industry/healthcare/healthcare-data-solutions/omop-analytics-configure#configure-the-omop-silver-notebook)
+
